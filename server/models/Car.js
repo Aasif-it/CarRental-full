@@ -14,8 +14,13 @@ const carSchema = new mongoose.Schema({
     pricePerDay: { type: Number, required: true },
     location: { type: String, required: true },
     description: { type: String, required: true },
+    quantity: { type: Number, default: 1 },
     isAvaliable: {type: Boolean, default: true}
 },{timestamps: true})
+
+carSchema.index({ location: 1 });
+carSchema.index({ brand: 1, model: 1 });
+carSchema.index({ category: 1 });
 
 const Car = mongoose.model('Car', carSchema)
 

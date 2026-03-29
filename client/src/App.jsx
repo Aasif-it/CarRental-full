@@ -7,13 +7,17 @@ import Cars from './pages/Cars'
 import MyBookings from './pages/MyBookings'
 import Footer from './components/Footer'
 import Layout from './pages/owner/Layout'
+import Contact from './pages/Contact'
 import Dashboard from './pages/owner/Dashboard'
 import AddCar from './pages/owner/AddCar'
 import ManageCars from './pages/owner/ManageCars'
 import ManageBookings from './pages/owner/ManageBookings'
+import ManageCustomers from './pages/owner/ManageCustomers'
 import Login from './components/Login'
 import { Toaster } from 'react-hot-toast'
 import { useAppContext } from './context/AppContext'
+import NotFound from './pages/NotFound'
+import ScrollToTop from './components/ScrollToTop'
 
 const App = () => {
 
@@ -22,6 +26,7 @@ const App = () => {
 
   return (
     <>
+     <ScrollToTop />
      <Toaster />
       {showLogin && <Login/>}
 
@@ -32,12 +37,15 @@ const App = () => {
       <Route path='/car-details/:id' element={<CarDetails/>}/>
       <Route path='/cars' element={<Cars/>}/>
       <Route path='/my-bookings' element={<MyBookings/>}/>
+      <Route path='/contact' element={<Contact/>}/>
       <Route path='/owner' element={<Layout />}>
         <Route index element={<Dashboard />}/>
         <Route path="add-car" element={<AddCar />}/>
         <Route path="manage-cars" element={<ManageCars />}/>
         <Route path="manage-bookings" element={<ManageBookings />}/>
+        <Route path="manage-customers" element={<ManageCustomers />}/>
       </Route>
+      <Route path="*" element={<NotFound />} />
     </Routes>
 
     {!isOwnerPath && <Footer />}

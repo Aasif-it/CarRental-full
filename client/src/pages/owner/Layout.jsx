@@ -5,13 +5,13 @@ import { Outlet } from 'react-router-dom'
 import { useAppContext } from '../../context/AppContext'
 
 const Layout = () => {
-  const {isOwner, navigate} = useAppContext()
+  const {user, token, navigate} = useAppContext()
 
   useEffect(()=>{
-    if(!isOwner){
+    if(!token || (user && user.email !== import.meta.env.VITE_ADMIN_EMAIL)){
       navigate('/')
     }
-  },[isOwner])
+  },[user, token])
   return (
     <div className='flex flex-col'>
       <NavbarOwner />

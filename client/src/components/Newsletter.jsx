@@ -1,7 +1,32 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'motion/react';
+import { useAppContext } from '../context/AppContext';
+import toast from 'react-hot-toast';
 
 const Newsletter = () => {
+
+    const { axios } = useAppContext()
+    const [email, setEmail] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
+
+    const handleSubscribe = async (e) => {
+        e.preventDefault()
+        setIsLoading(true)
+        try {
+            const { data } = await axios.post('/api/user/subscribe', { email })
+            if (data.success) {
+                toast.success(data.message)
+                setEmail('')
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
   return (
     <motion.div
     initial={{ opacity: 0, y: 30 }}
@@ -30,16 +55,23 @@ const Newsletter = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
+                onSubmit={handleSubscribe}
 
             className="flex items-center justify-between max-w-2xl w-full md:h-13 h-12">
                 <input
                     className="border border-gray-300 rounded-md h-full border-r-0 outline-none w-full rounded-r-none px-3 text-gray-500"
-                    type="text"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email id"
                     required
                 />
-                <button type="submit" className="md:px-12 px-8 h-full text-white bg-primary hover:bg-primary-dull transition-all cursor-pointer rounded-md rounded-l-none">
-                    Subscribe
+                <button 
+                    disabled={isLoading}
+                    type="submit" 
+                    className="md:px-12 px-8 h-full text-white bg-primary hover:bg-primary-dull transition-all cursor-pointer rounded-md rounded-l-none disabled:bg-gray-400"
+                >
+                    {isLoading ? '...' : 'Subscribe'}
                 </button>
             </motion.form>
         </motion.div>

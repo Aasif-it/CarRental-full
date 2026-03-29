@@ -8,8 +8,14 @@ import fs from "fs";
 // API to Change Role of User
 export const changeRoleToOwner = async (req, res)=>{
     try {
-        const {_id} = req.user;
-        await User.findByIdAndUpdate(_id, {role: "owner"})
+        const {user} = req;
+        
+        // Restrict this to the admin email
+        if(user.email !== process.env.ADMIN_EMAIL){
+            return res.json({success: false, message: "Only the administrator can become an owner."})
+        }
+
+        await User.findByIdAndUpdate(user._id, {role: "owner"})
         res.json({success: true, message: "Now you can list cars"})
     } catch (error) {
         console.log(error.message);
@@ -115,14 +121,17 @@ export const deleteCar = async (req, res) =>{
 // API to get Dashboard Data
 export const getDashboardData = async (req, res) =>{
     try {
-        const { _id, role } = req.user;
+        const { _id, email } = req.user;
 
-        if(role !== 'owner'){
+        // Force 'owner' role if email matches admin email
+        if(email === process.env.ADMIN_EMAIL){
+            await User.findByIdAndUpdate(_id, { role: 'owner' });
+        } else {
             return res.json({ success: false, message: "Unauthorized" });
         }
 
         const cars = await Car.find({owner: _id})
-        const bookings = await Booking.find({ owner: _id }).populate('car').sort({ createdAt: -1 });
+        const bookings = await Booking.find({ owner: _id }).populate('car').populate('user', 'name email image').sort({ createdAt: -1 });
 
         const pendingBookings = await Booking.find({owner: _id, status: "pending" })
         const completedBookings = await Booking.find({owner: _id, status: "confirmed" })
@@ -135,7 +144,7 @@ export const getDashboardData = async (req, res) =>{
             totalBookings: bookings.length,
             pendingBookings: pendingBookings.length,
             completedBookings: completedBookings.length,
-            recentBookings: bookings.slice(0,3),
+            latestBookings: bookings.slice(0,6),
             monthlyRevenue
         }
 
@@ -175,11 +184,22 @@ export const updateUserImage = async (req, res)=>{
 
         const image = optimizedImageUrl;
 
-        await User.findByIdAndUpdate(_id, {image});
-        res.json({success: true, message: "Image Updated" })
+        const user = await User.findByIdAndUpdate(_id, {image}, {new: true}).select("-password");
+        res.json({success: true, message: "Profile image updated", user})
 
     } catch (error) {
         console.log(error.message);
         res.json({success: false, message: error.message})
     }
-}   
+}
+
+// API to get All Customers (Admin)
+export const getAllCustomers = async (req, res) => {
+    try {
+        const customers = await User.find({ role: 'user' }).select("-password").sort({ createdAt: -1 });
+        res.json({ success: true, customers });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+}

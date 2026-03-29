@@ -85,7 +85,7 @@ const ManageCars = () => {
                   <img src={car.image} alt="" className="h-12 w-12 aspect-square rounded-md object-cover"/>
                   <div className='max-md:hidden'>
                     <p className='font-medium'>{car.brand} {car.model}</p>
-                    <p className='text-xs text-gray-500'>{car.seating_capacity} • {car.transmission}</p>
+                    <p className='text-xs text-gray-500'>{car.seating_capacity} Seats • {car.quantity} Units • {car.transmission}</p>
                   </div>
                 </td>
 

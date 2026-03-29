@@ -11,6 +11,9 @@ const bookingSchema = new mongoose.Schema({
     price: {type: Number, required: true}
 },{timestamps: true})
 
+bookingSchema.index({ user: 1, status: 1 });
+bookingSchema.index({ car: 1, pickupDate: 1, returnDate: 1 });
+
 const Booking = mongoose.model('Booking', bookingSchema)
 
 export default Booking

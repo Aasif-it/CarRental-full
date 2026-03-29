@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import Title from '../../components/owner/Title'
-import { assets } from '../../assets/assets'
+import { assets, cityList } from '../../assets/assets'
 import { useAppContext } from '../../context/AppContext'
 import toast from 'react-hot-toast'
 
 const AddCar = () => {
 
-  const {axios, currency} = useAppContext()
+  const {axios, currency, fetchCars} = useAppContext()
 
   const [image, setImage] = useState(null)
   const [car, setCar] = useState({
@@ -20,6 +20,7 @@ const AddCar = () => {
     seating_capacity: 0,
     location: '',
     description: '',
+    quantity: 1,
   })
 
   const [isLoading, setIsLoading] = useState(false)
@@ -29,6 +30,23 @@ const AddCar = () => {
 
     setIsLoading(true)
     try {
+      // Basic validation
+      if (car.year < 1900 || car.year > new Date().getFullYear() + 1) {
+        toast.error("Please enter a valid year")
+        setIsLoading(false)
+        return
+      }
+      if (car.pricePerDay <= 0) {
+        toast.error("Price must be greater than 0")
+        setIsLoading(false)
+        return
+      }
+      if (!image) {
+        toast.error("Please upload a car image")
+        setIsLoading(false)
+        return
+      }
+
       const formData = new FormData()
       formData.append('image', image)
       formData.append('carData', JSON.stringify(car))
@@ -37,6 +55,7 @@ const AddCar = () => {
 
       if(data.success){
         toast.success(data.message)
+        fetchCars()
         setImage(null)
         setCar({
           brand: '',
@@ -49,6 +68,7 @@ const AddCar = () => {
           seating_capacity: 0,
           location: '',
           description: '',
+          quantity: 1,
         })
       }else{
         toast.error(data.message)
@@ -136,6 +156,10 @@ const AddCar = () => {
             <label>Seating Capacity</label>
             <input type="number" placeholder="4" required className='px-3 py-2 mt-1 border border-borderColor rounded-md outline-none' value={car.seating_capacity} onChange={e=> setCar({...car, seating_capacity: e.target.value})}/>
           </div>
+          <div className='flex flex-col w-full'>
+            <label>Quantity (How many units?)</label>
+            <input type="number" placeholder="1" required min="1" className='px-3 py-2 mt-1 border border-borderColor rounded-md outline-none' value={car.quantity} onChange={e=> setCar({...car, quantity: e.target.value})}/>
+          </div>
         </div>
 
          {/* Car Location */}
@@ -143,10 +167,9 @@ const AddCar = () => {
             <label>Location</label>
             <select onChange={e=> setCar({...car, location: e.target.value})} value={car.location} className='px-3 py-2 mt-1 border border-borderColor rounded-md outline-none'>
               <option value="">Select a location</option>
-              <option value="New York">New York</option>
-              <option value="Los Angeles">Los Angeles</option>
-              <option value="Houston">Houston</option>
-              <option value="Chicago">Chicago</option>
+              {cityList.map((city, index) => (
+                <option key={index} value={city}>{city}</option>
+              ))}
             </select>
          </div>
         {/* Car Description */}

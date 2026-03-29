@@ -2,7 +2,84 @@ import User from "../models/User.js"
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import Car from "../models/Car.js";
+import Review from "../models/Review.js";
+import Booking from "../models/Booking.js";
+import { sendContactNotification, sendNewsletterNotification } from "../configs/nodemailer.js";
 
+
+// API for Contact Form Submission
+export const sendContact = async (req, res, next) => {
+    try {
+        const { name, email, subject, message } = req.body;
+
+        if (!name || !email || !subject || !message) {
+            return res.json({ success: false, message: "All fields are required" });
+        }
+
+        // Send notification to admin
+        await sendContactNotification({ name, email, subject, message });
+
+        res.json({ success: true, message: "Message Sent! Our team will contact you soon." });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// API for Newsletter Subscription
+export const subscribeNewsletter = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.json({ success: false, message: "Email is required" });
+        }
+
+        // Send notification to admin
+        await sendNewsletterNotification(email);
+
+        res.json({ success: true, message: "Subscribed Successfully!" });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// API to Add Review
+export const addReview = async (req, res, next)=>{
+    try {
+        const {_id} = req.user;
+        const {carId, rating, comment} = req.body;
+
+        // Check if user has already reviewed this car
+        const existingReview = await Review.findOne({car: carId, user: _id})
+        if(existingReview){
+            return res.json({success: false, message: "You have already reviewed this car"})
+        }
+
+        // Check if user has booked this car before
+        const booking = await Booking.findOne({car: carId, user: _id, status: 'confirmed'})
+        if(!booking){
+            return res.json({success: false, message: "You can only review cars you have successfully booked"})
+        }
+
+        await Review.create({car: carId, user: _id, rating, comment})
+        res.json({success: true, message: "Review Added"})
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+// API to Get Car Reviews
+export const getCarReviews = async (req, res)=>{
+    try {
+        const {carId} = req.params;
+        const reviews = await Review.find({car: carId}).populate('user', 'name image').sort({createdAt: -1})
+        res.json({success: true, reviews})
+    } catch (error) {
+        console.log(error.message);
+        res.json({success: false, message: error.message})
+    }
+}
 
 // Generate JWT Token
 const generateToken = (userId)=>{
@@ -11,7 +88,7 @@ const generateToken = (userId)=>{
 }
 
 // Register User
-export const registerUser = async (req, res)=>{
+export const registerUser = async (req, res, next)=>{
     try {
         const {name, email, password} = req.body
 
@@ -30,13 +107,12 @@ export const registerUser = async (req, res)=>{
         res.json({success: true, token})
 
     } catch (error) {
-        console.log(error.message);
-        res.json({success: false, message: error.message})
+        next(error)
     }
 }
 
 // Login User 
-export const loginUser = async (req, res)=>{
+export const loginUser = async (req, res, next)=>{
     try {
         const {email, password} = req.body
         const user = await User.findOne({email})
@@ -50,8 +126,7 @@ export const loginUser = async (req, res)=>{
         const token = generateToken(user._id.toString())
         res.json({success: true, token})
     } catch (error) {
-        console.log(error.message);
-        res.json({success: false, message: error.message})
+        next(error)
     }
 }
 
@@ -66,11 +141,67 @@ export const getUserData = async (req, res) =>{
     }
 }
 
+// Update User Profile
+export const updateProfile = async (req, res) => {
+    try {
+        const { _id } = req.user;
+        const { name } = req.body;
+        const imageFile = req.file;
+
+        let updateData = { name };
+
+        if (imageFile) {
+            const fs = await import('fs');
+            const imagekit = (await import('../configs/imageKit.js')).default;
+            
+            const fileBuffer = fs.readFileSync(imageFile.path);
+            const response = await imagekit.upload({
+                file: fileBuffer,
+                fileName: imageFile.originalname,
+                folder: '/users'
+            });
+
+            const optimizedImageUrl = imagekit.url({
+                path: response.filePath,
+                transformation: [
+                    { width: '400' },
+                    { quality: 'auto' },
+                    { format: 'webp' }
+                ]
+            });
+            updateData.image = optimizedImageUrl;
+        }
+
+        const user = await User.findByIdAndUpdate(_id, updateData, { new: true }).select("-password");
+        res.json({ success: true, message: "Profile Updated", user });
+
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+}
+
 // Get All Cars for the Frontend
 export const getCars = async (req, res) =>{
     try {
         const cars = await Car.find({isAvaliable: true})
-        res.json({success: true, cars})
+        
+        // Fetch reviews count and average rating for each car
+        const carsWithRatings = await Promise.all(cars.map(async (car) => {
+            const reviews = await Review.find({ car: car._id })
+            const totalReviews = reviews.length
+            const averageRating = totalReviews > 0 
+                ? (reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1) 
+                : 0
+            
+            return {
+                ...car._doc,
+                totalReviews,
+                averageRating: Number(averageRating)
+            }
+        }))
+
+        res.json({success: true, cars: carsWithRatings})
     } catch (error) {
         console.log(error.message);
         res.json({success: false, message: error.message})

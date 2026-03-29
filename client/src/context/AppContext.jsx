@@ -16,6 +16,7 @@ export const AppProvider = ({ children })=>{
     const [user, setUser] = useState(null)
     const [isOwner, setIsOwner] = useState(false)
     const [showLogin, setShowLogin] = useState(false)
+    const [pickupLocation, setPickupLocation] = useState('')
     const [pickupDate, setPickupDate] = useState('')
     const [returnDate, setReturnDate] = useState('')
 
@@ -27,7 +28,9 @@ export const AppProvider = ({ children })=>{
            const {data} = await axios.get('/api/user/data')
            if (data.success) {
             setUser(data.user)
-            setIsOwner(data.user.role === 'owner')
+            // Simplified check: If email matches admin, treat as owner for UI
+            const isAdminEmail = data.user.email === import.meta.env.VITE_ADMIN_EMAIL;
+            setIsOwner(isAdminEmail)
            }else{
             navigate('/')
            }
@@ -75,7 +78,7 @@ export const AppProvider = ({ children })=>{
     const value = {
         navigate, currency, axios, user, setUser,
         token, setToken, isOwner, setIsOwner, fetchUser, showLogin, setShowLogin, logout, fetchCars, cars, setCars, 
-        pickupDate, setPickupDate, returnDate, setReturnDate
+        pickupLocation, setPickupLocation, pickupDate, setPickupDate, returnDate, setReturnDate
     }
 
     return (
