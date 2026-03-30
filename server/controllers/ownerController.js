@@ -28,34 +28,53 @@ export const changeRoleToOwner = async (req, res)=>{
 export const addCar = async (req, res)=>{
     try {
         const {_id} = req.user;
-        let car = JSON.parse(req.body.carData);
+        const carDataStr = req.body.carData;
         const imageFile = req.file;
 
-        // Upload Image to ImageKit
-        const fileBuffer = fs.readFileSync(imageFile.path)
+        if (!carDataStr) {
+            return res.json({ success: false, message: "Car details are required" });
+        }
+
+        if (!imageFile) {
+            return res.json({ success: false, message: "Car image is required" });
+        }
+
+        let car = JSON.parse(carDataStr);
+
+        // Explicitly convert numeric fields to ensure they are stored correctly
+        car.year = Number(car.year);
+        car.pricePerDay = Number(car.pricePerDay);
+        car.seating_capacity = Number(car.seating_capacity);
+        car.quantity = Number(car.quantity || 1);
+
+        // Upload Image to ImageKit using Buffer
         const response = await imagekit.upload({
-            file: fileBuffer,
+            file: imageFile.buffer,
             fileName: imageFile.originalname,
             folder: '/cars'
         })
 
         // optimization through imagekit URL transformation
-        var optimizedImageUrl = imagekit.url({
+        const optimizedImageUrl = imagekit.url({
             path : response.filePath,
             transformation : [
-                {width: '1280'}, // Width resizing
-                {quality: 'auto'}, // Auto compression
-                { format: 'webp' }  // Convert to modern format
+                {width: '1280'}, 
+                {quality: 'auto'}, 
+                { format: 'webp' }  
             ]
         });
 
-        const image = optimizedImageUrl;
-        await Car.create({...car, owner: _id, image})
+        const newCar = await Car.create({
+            ...car, 
+            owner: _id, 
+            image: optimizedImageUrl
+        })
 
+        console.log("Car Added Successfully:", newCar._id);
         res.json({success: true, message: "Car Added"})
 
     } catch (error) {
-        console.log(error.message);
+        console.log("Add Car Error Details:", error);
         res.json({success: false, message: error.message})
     }
 }
@@ -161,34 +180,34 @@ export const getDashboardData = async (req, res) =>{
 export const updateUserImage = async (req, res)=>{
     try {
         const { _id } = req.user;
-
         const imageFile = req.file;
 
-        // Upload Image to ImageKit
-        const fileBuffer = fs.readFileSync(imageFile.path)
+        if (!imageFile) {
+            return res.json({ success: false, message: "Image is required" });
+        }
+
+        // Upload Image to ImageKit using Buffer
         const response = await imagekit.upload({
-            file: fileBuffer,
+            file: imageFile.buffer,
             fileName: imageFile.originalname,
             folder: '/users'
         })
 
         // optimization through imagekit URL transformation
-        var optimizedImageUrl = imagekit.url({
+        const optimizedImageUrl = imagekit.url({
             path : response.filePath,
             transformation : [
-                {width: '400'}, // Width resizing
-                {quality: 'auto'}, // Auto compression
-                { format: 'webp' }  // Convert to modern format
+                {width: '400'}, 
+                {quality: 'auto'}, 
+                { format: 'webp' }  
             ]
         });
 
-        const image = optimizedImageUrl;
-
-        const user = await User.findByIdAndUpdate(_id, {image}, {new: true}).select("-password");
+        const user = await User.findByIdAndUpdate(_id, {image: optimizedImageUrl}, {new: true}).select("-password");
         res.json({success: true, message: "Profile image updated", user})
 
     } catch (error) {
-        console.log(error.message);
+        console.log("Update Image Error:", error.message);
         res.json({success: false, message: error.message})
     }
 }

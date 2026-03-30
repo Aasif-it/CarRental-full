@@ -151,12 +151,10 @@ export const updateProfile = async (req, res) => {
         let updateData = { name };
 
         if (imageFile) {
-            const fs = await import('fs');
             const imagekit = (await import('../configs/imageKit.js')).default;
             
-            const fileBuffer = fs.readFileSync(imageFile.path);
             const response = await imagekit.upload({
-                file: fileBuffer,
+                file: imageFile.buffer, // Use buffer
                 fileName: imageFile.originalname,
                 folder: '/users'
             });
@@ -176,7 +174,7 @@ export const updateProfile = async (req, res) => {
         res.json({ success: true, message: "Profile Updated", user });
 
     } catch (error) {
-        console.log(error.message);
+        console.log("Update Profile Error:", error.message);
         res.json({ success: false, message: error.message });
     }
 }

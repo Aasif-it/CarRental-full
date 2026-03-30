@@ -27,7 +27,8 @@ export const isAdmin = async (req, res, next)=>{
     try {
         const {user} = req;
         if(user.email !== process.env.ADMIN_EMAIL){
-            return res.json({success: false, message: "Unauthorized access. Only admin can access this."})
+            console.log(`Access Denied: ${user.email} is not ${process.env.ADMIN_EMAIL}`);
+            return res.json({success: false, message: `Unauthorized access. ${user.email} is not an admin.`})
         }
         next();
     } catch (error) {
