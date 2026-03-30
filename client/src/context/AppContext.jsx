@@ -6,10 +6,10 @@ import { useNavigate } from "react-router-dom";
 let backendUrl = import.meta.env.VITE_BASE_URL
 
 if (!backendUrl) {
-    console.error("VITE_BASE_URL is not defined! Please set it in your environment variables.")
+    console.error("CRITICAL: VITE_BASE_URL is not defined in environment variables!")
 } else {
-    // Remove trailing slash if present to avoid // in URLs
     backendUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+    console.log("System initialized with Backend URL:", backendUrl);
 }
 
 axios.defaults.baseURL = backendUrl

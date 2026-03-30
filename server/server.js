@@ -13,27 +13,29 @@ import errorHandler from "./middleware/errorMiddleware.js";
 // Initialize Express App
 const app = express()
 
-// Security Middleware
+// Security & Middleware
 if (process.env.NODE_ENV === 'production') {
     app.use(helmet());
 }
 app.use(morgan('dev'));
-
-// Connect Database
-await connectDB()
-
-// Middleware
 app.use(cors({
-    origin: '*', // Allows all origins, you can restrict this to your frontend URL later
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 })); 
 app.use(express.json());
 
+// Health Check (Always reachable even if DB is slow)
 app.get('/', (req, res)=> res.send("Server is running"))
+app.get('/health', (req, res)=> res.json({ success: true, message: "Backend is healthy" }))
+
+// Routes
 app.use('/api/user', userRouter)
 app.use('/api/owner', ownerRouter)
 app.use('/api/bookings', bookingRouter)
+
+// Connect Database (Async)
+connectDB();
 
 // Error Handling Middleware
 app.use(errorHandler)
