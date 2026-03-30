@@ -3,7 +3,29 @@ import axios from 'axios'
 import {toast} from 'react-hot-toast'
 import { useNavigate } from "react-router-dom";
 
-axios.defaults.baseURL = import.meta.env.VITE_BASE_URL
+let backendUrl = import.meta.env.VITE_BASE_URL
+
+if (!backendUrl) {
+    console.error("VITE_BASE_URL is not defined! Please set it in your environment variables.")
+} else {
+    // Remove trailing slash if present to avoid // in URLs
+    backendUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+}
+
+axios.defaults.baseURL = backendUrl
+
+// Axios Interceptor for Global Error Handling
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.message === 'Network Error') {
+            toast.error("Network Error: Cannot connect to server. Please check if backend is running.")
+        } else if (error.response?.status === 401) {
+            // Handle unauthorized globally if needed
+        }
+        return Promise.reject(error)
+    }
+)
 
 export const AppContext = createContext();
 

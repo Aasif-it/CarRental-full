@@ -23,7 +23,11 @@ app.use(morgan('dev'));
 await connectDB()
 
 // Middleware
-app.use(cors()); 
+app.use(cors({
+    origin: '*', // Allows all origins, you can restrict this to your frontend URL later
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+})); 
 app.use(express.json());
 
 app.get('/', (req, res)=> res.send("Server is running"))
